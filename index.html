@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Laura Girls · Food Delivery</title>
+  <!-- Font Awesome (MoMo style icons) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- Google Maps API (placeholder key – replace with your own for production) -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC0X7LOV5Vqk7t7mGzN9eK8zP5yH9Qw0Jc&libraries=places&callback=initMap" async defer></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+    body {
+      background: #f5f7fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 12px;
+    }
+    #root {
+      width: 100%;
+      max-width: 430px;  /* mobile-first like MoMo */
+      background: white;
+      border-radius: 32px 32px 24px 24px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.08), 0 6px 12px rgba(0,0,0,0.05);
+      overflow: hidden;
+      position: relative;
+      min-height: 780px;
+      display: flex;
+      flex-direction: column;
+    }
+    /* header / brand */
+    .app-header {
+      background: #6c2b8a; /* MoMo purple twist */
+      padding: 18px 20px 14px;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.15);
+    }
+    .app-header i {
+      font-size: 26px;
+      color: #ffcc00;
+    }
+    .app-header h1 {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+      flex: 1;
+    }
+    .app-header .badge {
+      background: #ffcc00;
+      color: #1f1f2e;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 40px;
+    }
+    /* main content – scrollable */
+    .app-body {
+      flex: 1;
+      padding: 16px 16px 10px;
+      overflow-y: auto;
+      background: #fafafc;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    /* card style */
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 16px 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+      border: 1px solid #f0eff2;
+    }
+    .section-title {
+      font-weight: 600;
+      font-size: 15px;
+      color: #1a1a2e;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-title i {
+      color: #6c2b8a;
+      font-size: 16px;
+    }
+    /* menu grid */
+    .menu-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .menu-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 4px;
+      border-bottom: 1px solid #f0edf3;
+    }
+    .menu-item:last-child {
+      border-bottom: none;
+    }
+    .menu-item .info {
+      display: flex;
+      flex-direction: column;
+    }
+    .menu-item .name {
+      font-weight: 500;
+      color: #1f1f2e;
+    }
+    .menu-item .price {
+      font-size: 14px;
+      color: #6c2b8a;
+      font-weight: 600;
+    }
+    .menu-item .add-btn {
+      background: #6c2b8a;
+      color: white;
+      border: none;
+      border-radius: 30px;
+      padding: 6px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .menu-item .add-btn i {
+      font-size: 12px;
+    }
+    .menu-item .add-btn:active {
+      transform: scale(0.94);
+      background: #521f6b;
+    }
+    /* order summary */
+    .order-summary {
+      background: #ffffff;
+      border-radius: 24px;
+      padding: 14px 14px 10px;
+      border: 1px solid #e9e6ed;
+      margin-top: 4px;
+    }
+    .order-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      padding: 6px 0;
+      border-bottom: 1px dashed #e3dfe9;
+    }
+    .order-row:last-child {
+      border-bottom: none;
+    }
+    .order-total {
+      font-weight: 700;
+      color: #1a1a2e;
+      font-size: 16px;
+    }
+    .order-total span {
+      color: #6c2b8a;
+    }
+    .action-btn {
+      background: #ffcc00;
+      border: none;
+      border-radius: 40px;
+      padding: 12px 0;
+      font-weight: 700;
+      font-size: 16px;
+      color: #1f1f2e;
+      width: 100%;
+      margin-top: 12px;
+      cursor: pointer;
+      transition: 0.15s;
+      box-shadow: 0 4px 8px rgba(108, 43, 138, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .action-btn:active {
+      transform: scale(0.97);
+      background: #e6b800;
+    }
+    .action-btn i {
+      font-size: 18px;
+    }
+    .secondary-btn {
+      background: #f0edf5;
+      color: #2d2d44;
+      box-shadow: none;
+    }
+    /* map placeholder */
+    .map-container {
+      height: 160px;
+      background: #d9d2e3;
+      border-radius: 20px;
+      overflow: hidden;
+      margin: 4px 0 6px;
+      position: relative;
+    }
+    .map-container iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+    .map-fallback {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #3d2d4a;
+      font-size: 13px;
+      background: #e5deed;
+      gap: 6px;
+    }
+    .delivery-girl-badge {
+      background: #e6def0;
+      padding: 8px 14px;
+      border-radius: 40px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #2d1e3a;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .admin-panel {
+      background: #f4f0f9;
+      border-radius: 24px;
+      padding: 14px;
+      margin-top: 4px;
+    }
+    .admin-input-group {
+      display: flex;
+      gap: 8px;
+      margin: 8px 0 6px;
+      flex-wrap: wrap;
+    }
+    .admin-input-group input {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid #d6cee0;
+      border-radius: 40px;
+      background: white;
+      font-size: 14px;
+      outline: none;
+    }
+    .admin-input-group input:focus {
+      border-color: #6c2b8a;
+    }
+    .admin-input-group button {
+      background: #6c2b8a;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 40px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .delivery-girl-list {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .delivery-girl-tag {
+      background: white;
+      border-radius: 40px;
+      padding: 6px 14px 6px 12px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid #d4cade;
+    }
+    .delivery-girl-tag i {
+      color: #6c2b8a;
+    }
+    .delivery-girl-tag .remove {
+      color: #b0003a;
+      cursor: pointer;
+      font-size: 14px;
+      margin-left: 4px;
+    }
+    .footnote {
+      font-size: 11px;
+      color: #6d6a7a;
+      text-align: center;
+      padding: 12px 0 6px;
+      border-top: 1px solid #ece9f0;
+      margin-top: 6px;
+    }
+    .flex-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .badge-momo {
+      background: #ffcc00;
+      padding: 4px 12px;
+      border-radius: 30px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    /* small tweaks */
+    .mt-1 { margin-top: 6px; }
+    .mb-1 { margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+<div id="root">
+  <!-- header -->
+  <div class="app-header">
+    <i class="fas fa-utensils"></i>
+    <h1>Laura Girls Food</h1>
+    <span class="badge"><i class="fas fa-motorcycle"></i> delivery</span>
+  </div>
+
+  <!-- main app body (react will mount here) -->
+  <div id="app-container" class="app-body">
+    <!-- React content will be injected -->
+  </div>
+
+  <!-- footer note -->
+  <div class="footnote">
+    <i class="fas fa-shield-alt"></i> Cash on delivery · MTN MoMo style
+  </div>
+</div>
+
+<!-- backend + frontend all in one file (Node + React) -->
+<script>
+  // **********************************************
+  // *  SINGLE FILE APP: BACKEND (express) + FRONTEND (react)
+  // *  Database: Supabase (via fetch simulation)
+  // *  To run: node this file (requires npm install express)
+  // **********************************************
+  
+  // ---- BACKEND (Express) ----
+  const express = require('express');
+  const path = require('path');
+  const app = express();
+  const PORT = process.env.PORT || 3000;
+
+  // Serve static files (this file itself will be served as HTML)
+  app.use(express.static(__dirname));
+  app.use(express.json());
+
+  // Supabase mock / proxy (we simulate DB operations)
+  // In real app, use @supabase/supabase-js, but for single file we use fetch + public anon key
+  // For demo, we keep in-memory fallback if supabase not configured
+  const SUPABASE_URL = 'https://your-project.supabase.co';  // replace with your URL
+  const SUPABASE_ANON_KEY = 'your-anon-key';               // replace with your anon key
+
+  // In-memory store (fallback / dev)
+  let memoryDB = {
+    menu: [
+      { id: 1, name: 'Grilled Chicken', price: 12.99, emoji: '🍗' },
+      { id: 2, name: 'Jollof Rice', price: 9.49, emoji: '🍛' },
+      { id: 3, name: 'Beef Burger', price: 11.99, emoji: '🍔' },
+      { id: 4, name: 'Fruit Salad', price: 7.25, emoji: '🥗' },
+      { id: 5, name: 'Mango Smoothie', price: 5.50, emoji: '🥭' },
+    ],
+    orders: [],
+    deliveryGirls: ['Alice', 'Brenda', 'Cathy']
+  };
+
+  // API endpoints
+  app.get('/api/menu', (req, res) => {
+    res.json(memoryDB.menu);
+  });
+
+  app.get('/api/delivery-girls', (req, res) => {
+    res.json(memoryDB.deliveryGirls);
+  });
+
+  app.post('/api/delivery-girls', (req, res) => {
+    const { name } = req.body;
+    if (name && !memoryDB.deliveryGirls.includes(name)) {
+      memoryDB.deliveryGirls.push(name);
+      res.status(201).json({ success: true, girls: memoryDB.deliveryGirls });
+    } else {
+      res.status(400).json({ error: 'Invalid or duplicate name' });
+    }
+  });
+
+  app.delete('/api/delivery-girls/:name', (req, res) => {
+    const name = req.params.name;
+    memoryDB.deliveryGirls = memoryDB.deliveryGirls.filter(g => g !== name);
+    res.json({ success: true, girls: memoryDB.deliveryGirls });
+  });
+
+  app.post('/api/order', (req, res) => {
+    const { items, total, customerLocation } = req.body;
+    const order = {
+      id: Date.now(),
+      items,
+      total,
+      customerLocation: customerLocation || 'Accra, Ghana',
+      status: 'pending',
+      createdAt: new Date().toISOString()
+    };
+    memoryDB.orders.push(order);
+    res.status(201).json({ success: true, order });
+  });
+
+  // serve the main html
+  app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+  });
+
+  // ---- FRONTEND (React) ----
+  // We inject React via CDN and render inside #app-container
+  const reactScript = `
+    (function() {
+      // React & ReactDOM from CDN
+      const scriptReact = document.createElement('script');
+      scriptReact.src = 'https://unpkg.com/react@18/umd/react.production.min.js';
+      document.head.appendChild(scriptReact);
+      const scriptReactDOM = document.createElement('script');
+      scriptReactDOM.src = 'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js';
+      document.head.appendChild(scriptReactDOM);
+
+      // wait for react to load
+      scriptReactDOM.onload = function() {
+        const { useState, useEffect } = React;
+
+        function App() {
+          const [menu, setMenu] = useState([]);
+          const [cart, setCart] = useState([]);
+          const [deliveryGirls, setDeliveryGirls] = useState([]);
+          const [newGirl, setNewGirl] = useState('');
+          const [orderPlaced, setOrderPlaced] = useState(false);
+          const [customerLocation, setCustomerLocation] = useState('Accra, Ghana');
+          const [mapLoaded, setMapLoaded] = useState(false);
+
+          // fetch menu & delivery girls
+          useEffect(() => {
+            fetch('/api/menu')
+              .then(r => r.json())
+              .then(setMenu)
+              .catch(console.warn);
+            fetch('/api/delivery-girls')
+              .then(r => r.json())
+              .then(setDeliveryGirls)
+              .catch(console.warn);
+          }, []);
+
+          const addToCart = (item) => {
+            setCart(prev => {
+              const existing = prev.find(i => i.id === item.id);
+              if (existing) {
+                return prev.map(i => i.id === item.id ? { ...i, qty: i.qty + 1 } : i);
+              }
+              return [...prev, { ...item, qty: 1 }];
+            });
+          };
+
+          const removeFromCart = (id) => {
+            setCart(prev => {
+              const existing = prev.find(i => i.id === id);
+              if (existing && existing.qty > 1) {
+                return prev.map(i => i.id === id ? { ...i, qty: i.qty - 1 } : i);
+              }
+              return prev.filter(i => i.id !== id);
+            });
+          };
+
+          const totalPrice = cart.reduce((acc, i) => acc + i.price * i.qty, 0);
+
+          const placeOrder = async () => {
+            if (cart.length === 0) return alert('Add items to order');
+            const orderPayload = {
+              items: cart,
+              total: totalPrice,
+              customerLocation: customerLocation
+            };
+            try {
+              const res = await fetch('/api/order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(orderPayload)
+              });
+              const data = await res.json();
+              if (data.success) {
+                setOrderPlaced(true);
+                setCart([]);
+                setTimeout(() => setOrderPlaced(false), 6000);
+                // simulate assigning a delivery girl
+                alert('✅ Order placed! A delivery girl will arrive soon. (Cash on delivery)');
+              }
+            } catch (e) {
+              alert('Error placing order');
+            }
+          };
+
+          const addDeliveryGirl = async () => {
+            if (!newGirl.trim()) return;
+            try {
+              const res = await fetch('/api/delivery-girls', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: newGirl.trim() })
+              });
+              const data = await res.json();
+              if (data.success) setDeliveryGirls(data.girls);
+              setNewGirl('');
+            } catch (e) { alert('Error'); }
+          };
+
+          const removeGirl = async (name) => {
+            try {
+              const res = await fetch('/api/delivery-girls/' + encodeURIComponent(name), { method: 'DELETE' });
+              const data = await res.json();
+              if (data.success) setDeliveryGirls(data.girls);
+            } catch (e) { alert('Error'); }
+          };
+
+          // Google Map embed (static for demo) – shows customer & delivery location
+          const mapSrc = "https://www.google.com/maps/embed/v1/place?key=AIzaSyC0X7LOV5Vqk7t7mGzN9eK8zP5yH9Qw0Jc&q=" + encodeURIComponent(customerLocation);
+
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Menu Section */}
+              <div className="card">
+                <div className="section-title"><i className="fas fa-list-ul"></i> Today's Menu</div>
+                <div className="menu-grid">
+                  {menu.map(item => (
+                    <div className="menu-item" key={item.id}>
+                      <div className="info">
+                        <span className="name">{item.emoji} {item.name}</span>
+                        <span className="price">${item.price.toFixed(2)}</span>
+                      </div>
+                      <button className="add-btn" onClick={() => addToCart(item)}>
+                        <i className="fas fa-plus"></i> Add
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Cart / Order summary */}
+              <div className="order-summary">
+                <div className="section-title" style={{ marginBottom: '6px' }}><i className="fas fa-shopping-bag"></i> Your Order</div>
+                {cart.length === 0 ? (
+                  <div style={{ color: '#7a6e86', fontSize: '14px', padding: '6px 0' }}>Add items from menu</div>
+                ) : (
+                  cart.map(item => (
+                    <div className="order-row" key={item.id}>
+                      <span>{item.name} × {item.qty}</span>
+                      <span>${(item.price * item.qty).toFixed(2)} 
+                        <button onClick={() => removeFromCart(item.id)} style={{ background: 'none', border: 'none', color: '#b0003a', marginLeft: '8px', cursor: 'pointer' }}><i className="fas fa-minus-circle"></i></button>
+                      </span>
+                    </div>
+                  ))
+                )}
+                <div className="order-row order-total">
+                  <span>Total</span>
+                  <span>${totalPrice.toFixed(2)}</span>
+                </div>
+                <button className="action-btn" onClick={placeOrder}>
+                  <i className="fas fa-motorcycle"></i> Place Order · Cash
+                </button>
+                {orderPlaced && <div style={{ color: '#1f8b4c', fontSize: '14px', marginTop: '8px' }}><i className="fas fa-check-circle"></i> Order placed! Delivery on the way.</div>}
+              </div>
+
+              {/* Map + Location */}
+              <div className="card">
+                <div className="section-title"><i className="fas fa-map-pin"></i> Delivery location</div>
+                <div className="map-container">
+                  <iframe 
+                    src={mapSrc} 
+                    loading="lazy" 
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="delivery map"
+                  ></iframe>
+                </div>
+                <div style={{ fontSize: '13px', color: '#2d2d44', marginTop: '6px' }}>
+                  <i className="fas fa-location-dot" style={{ color: '#6c2b8a' }}></i> Customer: {customerLocation}
+                </div>
+                <div style={{ fontSize: '12px', color: '#5f556b', marginTop: '4px' }}>
+                  <i className="fas fa-user-check"></i> Delivery girl sees this location
+                </div>
+              </div>
+
+              {/* Admin: delivery girls */}
+              <div className="admin-panel">
+                <div className="section-title"><i className="fas fa-user-gear"></i> Admin · Delivery girls</div>
+                <div className="admin-input-group">
+                  <input 
+                    placeholder="Add girl name" 
+                    value={newGirl} 
+                    onChange={e => setNewGirl(e.target.value)}
+                  />
+                  <button onClick={addDeliveryGirl}><i className="fas fa-plus"></i> Add</button>
+                </div>
+                <div className="delivery-girl-list">
+                  {deliveryGirls.map(g => (
+                    <span className="delivery-girl-tag" key={g}>
+                      <i className="fas fa-female"></i> {g}
+                      <span className="remove" onClick={() => removeGirl(g)}><i className="fas fa-times"></i></span>
+                    </span>
+                  ))}
+                </div>
+                <div style={{ fontSize: '12px', color: '#4d435a', marginTop: '8px' }}>
+                  <i className="fas fa-info-circle"></i> Delivery girls see customer location on map.
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        // render
+        const container = document.getElementById('app-container');
+        const root = ReactDOM.createRoot(container);
+        root.render(React.createElement(App));
+      };
+    })();
+  `;
+  
+  // inject react app script after body
+  const scriptTag = document.createElement('script');
+  scriptTag.innerHTML = reactScript;
+  document.body.appendChild(scriptTag);
+
+  // start server
+  app.listen(PORT, () => {
+    console.log(`🚀 Laura Girls Food App running on http://localhost:${PORT}`);
+    console.log(`📦 Single file · backend+frontend · Supabase ready`);
+  });
+
+</script>
+</body>
+</html>
